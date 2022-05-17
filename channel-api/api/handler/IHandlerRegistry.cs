@@ -1,21 +1,22 @@
-﻿using System;
+﻿using channel_api.channels.channels;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
 namespace channel_api.api.handler
 {
-    interface IHandlerRegistry
+    interface IHandlerRegistry<T>
     {
 
-        public static List<IHandlerRegistry> registries = new List<IHandlerRegistry>();
+        IHandlerRegistry<T> Handler(DefaultInboundHandler<T> handler);
 
-        IHandlerRegistry Register(DefaultHandler handler);
+        IHandlerRegistry<T> Unregister(int handler);
 
-        IHandlerRegistry Unregister(int i);
+        IHandlerRegistry<T> Unregister(DefaultInboundHandler<T> handler);
 
-        IHandlerRegistry Unregister(DefaultHandler handler);
+        ICollection<DefaultInboundHandler<T>> Handlers();
 
-        ICollection<DefaultHandler> Handlers();
+        IChannel Channel();
 
     }
 }

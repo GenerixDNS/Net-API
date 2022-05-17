@@ -1,8 +1,11 @@
-﻿using channel_api.api.exceptions;
+﻿using channel_api.api.data;
+using channel_api.api.data.registry;
+using channel_api.api.exceptions;
 using channel_api.api.handler;
 using channel_api.api.handler.context;
 using channel_api.api.pool;
 using channel_api.channels.managment;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Net;
@@ -16,12 +19,22 @@ namespace channel_api.channels.channels.impl
     {
 
         private static TcpListener locl;
+        private static Encoding encoder = Encoding.UTF8;
+        private static IConnection connection;
 
         private TcpListener listener;
         private IConnectionManagement connectionManagement;
         private bool uninterruptibly = false;
         private Thread workerThread = new Thread(Listen0);
+        private Thread channelReadThread = new Thread(ListenRead0);
         private bool open = false;
+        private IHandlerRegistry<Socket> registry;
+
+        public SimpleServerChannel()
+        {
+            this.registry = new SimpleHandlerRegistry<Socket>(this);
+            connection = new SimpleConnection(this);
+        }
 
         private static void Listen0()
         {
@@ -29,14 +42,49 @@ namespace channel_api.channels.channels.impl
             {
                 Socket socket = locl.AcceptSocket();
                 ChannelPool.Pool().Register(socket);
-                IChannelHandlerContext ctx = new SimpleChannelHandlerContext(socket);
-                IHandlerRegistry.registries.ForEach(e =>
+                IChannelHandlerContext<Socket> ctx = new SimpleChannelHandlerContext<Socket>(socket);
+                ChannelPool.Pool().ForEachRegistry(e =>
                 {
-                    foreach (DefaultHandler h in e.Handlers())
+                    foreach (DefaultInboundHandler<Socket> h in e.Handlers())
                     {
-                        h.HandleClose(ctx);
+                        h.HandleOpen(ctx);
                     }
                 });
+            }
+        }
+
+        private static void ListenRead0()
+        {
+            while (true)
+            {
+                if (locl.Server.Available > 0)
+                {
+                    string receivedValue = string.Empty;
+                    byte[] receivedBytes = new byte[locl.Server.ReceiveBufferSize];
+                    int numBytes = locl.Server.Receive(receivedBytes);
+                    receivedValue += Encoding.UTF8.GetString(receivedBytes);
+                    bool p = false;
+                    try
+                    {
+                        JsonBuf buf = JsonConvert.DeserializeObject<JsonBuf>(receivedValue);
+                        Packet packet = (Packet)buf.Raw();
+                        Type type = DefaultPacketRegistry.ByUID(buf.Uid());
+                        foreach (IPacketHandler handler in connection.Handlers())
+                            handler.Handle(type, packet, buf);
+                        p = true;
+                    }
+                    catch { }
+                    if (!p)
+                    {
+                        ChannelPool.Pool().ForEachRegistry(e =>
+                        {
+                            foreach (DefaultInboundHandler<Socket> h in e.Handlers())
+                            {
+                                h.ChannelRead0(null, receivedValue);
+                            }
+                        });
+                    }
+                }
             }
         }
 
@@ -52,10 +100,10 @@ namespace channel_api.channels.channels.impl
             {
                 ChannelPool.Pool().ForEach(e =>
                 {
-                    IChannelHandlerContext ctx = new SimpleChannelHandlerContext(e);
-                    IHandlerRegistry.registries.ForEach(e =>
+                    IChannelHandlerContext<Socket> ctx = new SimpleChannelHandlerContext<Socket>(e);
+                    ChannelPool.Pool().ForEachRegistry(e =>
                     {
-                        foreach (DefaultHandler h in e.Handlers())
+                        foreach (DefaultInboundHandler<Socket> h in e.Handlers())
                         {
                             h.HandleClose(ctx);
                         }
@@ -63,25 +111,22 @@ namespace channel_api.channels.channels.impl
                     e.Close();
                 });
                 this.listener.Stop();
+                this.workerThread.Abort();
+                this.channelReadThread.Abort();
                 return this;
             }
             throw new ChannelNotOpenedException();
-        }
-
-        public IChannel Handler(DefaultHandler handler)
-        {
-            IHandlerRegistry registry = new SimpleHandlerRegistry();
-            registry.Register(handler);
-            return this;
         }
 
         public IChannel Open()
         {
             this.listener = new TcpListener(IPAddress.Any, this.connectionManagement.Port());
             locl = this.listener;
+            this.listener.Start();
+            this.channelReadThread.Start();
             if (this.uninterruptibly == true)
                 this.workerThread.Start();
-            this.listener.Start();
+            else Listen0();
             return this;
         }
 
@@ -89,6 +134,23 @@ namespace channel_api.channels.channels.impl
         {
             this.uninterruptibly = !this.uninterruptibly;
             return this;
+        }
+
+        public IChannel WriteAndFlush(string raw)
+        {
+            byte[] bytes = encoder.GetBytes(raw);
+            locl.Server.Send(bytes);
+            return this;
+        }
+
+        public IHandlerRegistry<Socket> BaseRegistry()
+        {
+            return this.registry;
+        }
+
+        public IConnection Connection()
+        {
+            return connection;
         }
     }
 }

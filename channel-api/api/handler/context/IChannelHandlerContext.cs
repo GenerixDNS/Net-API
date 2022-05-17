@@ -5,10 +5,10 @@ using System.Text;
 
 namespace channel_api.api.handler.context
 {
-    interface IChannelHandlerContext
+    interface IChannelHandlerContext<T>
     {
 
-        Socket Connection();
+        T Connection();
 
     }
 }

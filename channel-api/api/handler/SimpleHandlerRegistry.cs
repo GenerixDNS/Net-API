@@ -1,36 +1,45 @@
-﻿using System;
+﻿using channel_api.channels.channels;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
 namespace channel_api.api.handler
 {
-    class SimpleHandlerRegistry : IHandlerRegistry
+    class SimpleHandlerRegistry<T> : IHandlerRegistry<T>
     {
-        public SimpleHandlerRegistry()
+
+        private List<DefaultInboundHandler<T>> handlers = new List<DefaultInboundHandler<T>>();
+
+        private IChannel channel;
+
+        public SimpleHandlerRegistry(IChannel channel)
         {
-            IHandlerRegistry.registries.Add(this);
+            this.channel = channel;
         }
 
-        private List<DefaultHandler> handlers = new List<DefaultHandler>();
-
-        public ICollection<DefaultHandler> Handlers()
+        public IChannel Channel()
         {
-            return this.handlers;
+            return this.channel;
         }
 
-        public IHandlerRegistry Register(DefaultHandler handler)
+        public IHandlerRegistry<T> Handler(DefaultInboundHandler<T> handler)
         {
             this.handlers.Add(handler);
             return this;
         }
 
-        public IHandlerRegistry Unregister(int i)
+        public ICollection<DefaultInboundHandler<T>> Handlers()
         {
-            this.handlers.Remove(this.handlers[i]);
+            return this.handlers;
+        }
+
+        public IHandlerRegistry<T> Unregister(int handler)
+        {
+            this.handlers.Remove(this.handlers[handler]);
             return this;
         }
 
-        public IHandlerRegistry Unregister(DefaultHandler handler)
+        public IHandlerRegistry<T> Unregister(DefaultInboundHandler<T> handler)
         {
             this.handlers.Remove(handler);
             return this;

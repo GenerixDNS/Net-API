@@ -5,16 +5,16 @@ using System.Text;
 
 namespace channel_api.api.handler.context
 {
-    class SimpleChannelHandlerContext : IChannelHandlerContext
+    class SimpleChannelHandlerContext<T> : IChannelHandlerContext<T>
     {
 
-        private Socket connection;
-        public SimpleChannelHandlerContext(Socket c)
+        private T connection;
+        public SimpleChannelHandlerContext(T c)
         {
             this.connection = c;    
         }
 
-        public Socket Connection()
+        public T Connection()
         {
             return this.connection;
         }

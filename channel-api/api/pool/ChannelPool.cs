@@ -1,4 +1,5 @@
-﻿using System;
+﻿using channel_api.api.handler;
+using System;
 using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Text;
@@ -10,6 +11,7 @@ namespace channel_api.api.pool
 
         private static ChannelPool instance;
         private List<Socket> registry = new List<Socket>();
+        private List<IHandlerRegistry<object>> registries = new List<IHandlerRegistry<object>>();
 
         public static ChannelPool Pool() 
         {
@@ -30,7 +32,15 @@ namespace channel_api.api.pool
         {
             foreach (Socket socket in this.registry)
             {
-                socket.Close();
+                a.Invoke(socket);
+            }
+        }
+
+        public void ForEachRegistry(Action<IHandlerRegistry<object>> a)
+        {
+            foreach (IHandlerRegistry<object> registry in this.registries)
+            {
+                a.Invoke(registry);
             }
         }
 
