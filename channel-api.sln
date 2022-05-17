@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.32428.217
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "wirechain", "channel-api\wirechain.csproj", "{1737ECD2-26E5-428A-A58A-868C09DA1A36}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "channel-api", "channel-api\channel-api.csproj", "{1737ECD2-26E5-428A-A58A-868C09DA1A36}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

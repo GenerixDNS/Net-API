@@ -10,7 +10,7 @@ namespace channel_api.channels.channels
     interface IConnectedChannel: IChannel
     {
 
-        public static IChannel getChannel()
+        public static IChannel GetChannel()
         {
             return new SimpleClientChannel();
         }
