@@ -1,4 +1,6 @@
 ﻿using channel_api.api.exceptions;
+using channel_api.api.handler;
+using channel_api.api.handler.context;
 using channel_api.api.pool;
 using channel_api.channels.managment;
 using System;
@@ -27,6 +29,14 @@ namespace channel_api.channels.channels.impl
             {
                 Socket socket = locl.AcceptSocket();
                 ChannelPool.Pool().Register(socket);
+                IChannelHandlerContext ctx = new SimpleChannelHandlerContext(socket);
+                IHandlerRegistry.registries.ForEach(e =>
+                {
+                    foreach (DefaultHandler h in e.Handlers())
+                    {
+                        h.HandleClose(ctx);
+                    }
+                });
             }
         }
 
@@ -40,14 +50,29 @@ namespace channel_api.channels.channels.impl
         {
             if (this.open)
             {
-                this.listener.Stop();
                 ChannelPool.Pool().ForEach(e =>
                 {
+                    IChannelHandlerContext ctx = new SimpleChannelHandlerContext(e);
+                    IHandlerRegistry.registries.ForEach(e =>
+                    {
+                        foreach (DefaultHandler h in e.Handlers())
+                        {
+                            h.HandleClose(ctx);
+                        }
+                    });
                     e.Close();
                 });
+                this.listener.Stop();
                 return this;
             }
             throw new ChannelNotOpenedException();
+        }
+
+        public IChannel Handler(DefaultHandler handler)
+        {
+            IHandlerRegistry registry = new SimpleHandlerRegistry();
+            registry.Register(handler);
+            return this;
         }
 
         public IChannel Open()

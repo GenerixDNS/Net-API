@@ -6,6 +6,10 @@ namespace channel_api.api.handler
 {
     class SimpleHandlerRegistry : IHandlerRegistry
     {
+        public SimpleHandlerRegistry()
+        {
+            IHandlerRegistry.registries.Add(this);
+        }
 
         private List<DefaultHandler> handlers = new List<DefaultHandler>();
 

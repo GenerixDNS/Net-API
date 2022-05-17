@@ -9,7 +9,7 @@ namespace channel_api.api.handler.context
     {
 
         private Socket connection;
-        SimpleChannelHandlerContext(Socket c)
+        public SimpleChannelHandlerContext(Socket c)
         {
             this.connection = c;    
         }

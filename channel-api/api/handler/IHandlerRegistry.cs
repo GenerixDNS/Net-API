@@ -7,6 +7,8 @@ namespace channel_api.api.handler
     interface IHandlerRegistry
     {
 
+        public static List<IHandlerRegistry> registries = new List<IHandlerRegistry>();
+
         IHandlerRegistry Register(DefaultHandler handler);
 
         IHandlerRegistry Unregister(int i);
